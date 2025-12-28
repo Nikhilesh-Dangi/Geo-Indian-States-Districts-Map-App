@@ -46,6 +46,7 @@ let geojsonLayer = null;
 let currentData = null;
 let currentLayerKey = "states";
 let selectedIds = new Set(JSON.parse(localStorage.getItem("selected-ids") || "[]"));
+let lastLoadedUrl = null;
 
 const layerConfig = {
   states: {
@@ -73,6 +74,46 @@ function restoreLayerPreference() {
 }
 
 restoreLayerPreference();
+
+function buildCandidateUrls(key) {
+  const cfg = layerConfig[key];
+  const pathParts = window.location.pathname.split("/").filter(Boolean);
+  const repoBase = pathParts.length ? `/${pathParts[0]}/` : "/";
+  const basePath = window.location.pathname.replace(/[^/]*$/, ""); // includes trailing slash
+  return [
+    `${repoBase}${cfg.path}`,
+    new URL(cfg.path, window.location.origin + basePath).toString(),
+    new URL(cfg.path, window.location.href).toString(),
+    `${basePath}${cfg.path}`,
+    `./${cfg.path}`,
+  ];
+}
+
+async function fetchDataset(key) {
+  const candidateUrls = buildCandidateUrls(key);
+  let res;
+  let data = null;
+  let lastErr;
+  const tried = new Set();
+  for (const url of candidateUrls) {
+    if (tried.has(url)) continue;
+    tried.add(url);
+    try {
+      res = await fetch(url);
+      if (res.ok) {
+        data = await res.json();
+        lastLoadedUrl = url;
+        console.info(`Loaded dataset from ${url}`);
+        break;
+      } else {
+        lastErr = `Fetch failed ${res.status} for ${url}`;
+      }
+    } catch (e) {
+      lastErr = e.message;
+    }
+  }
+  return { data, lastErr, tried: Array.from(tried) };
+}
 
 function styleFeature(feature) {
   const id = feature.id || feature.properties.id || feature.properties.fid;
@@ -116,42 +157,12 @@ async function loadLayer(key) {
   if (geojsonLayer) {
     geojsonLayer.remove();
   }
-  const cfg = layerConfig[key];
-  const pathParts = window.location.pathname.split("/").filter(Boolean);
-  const repoBase = pathParts.length ? `/${pathParts[0]}/` : "/";
-  const basePath = window.location.pathname.replace(/[^/]*$/, ""); // includes trailing slash
-  const candidateUrls = [
-    `${repoBase}${cfg.path}`,
-    new URL(cfg.path, window.location.origin + basePath).toString(),
-    new URL(cfg.path, window.location.href).toString(),
-    `${basePath}${cfg.path}`,
-    `./${cfg.path}`,
-  ];
-  let res;
-  try {
-    let lastErr;
-    const tried = new Set();
-    for (const url of candidateUrls) {
-      if (tried.has(url)) continue;
-      tried.add(url);
-      try {
-        res = await fetch(url);
-        if (res.ok) {
-          currentData = await res.json();
-          console.info(`Loaded dataset from ${url}`);
-          break;
-        } else {
-          lastErr = `Fetch failed ${res.status} for ${url}`;
-        }
-      } catch (e) {
-        lastErr = e.message;
-      }
-    }
-    if (!currentData) throw new Error(lastErr || "Unknown fetch error");
-  } catch (err) {
-    showBanner(`Failed to load dataset. ${err.message}. Tried: ${Array.from(new Set(candidateUrls)).join(", ")}`);
+  const { data, lastErr, tried } = await fetchDataset(key);
+  if (!data) {
+    showBanner(`Failed to load dataset. ${lastErr || "Unknown error"}. Tried: ${tried.join(", ")}`);
     return;
   }
+  currentData = data;
 
   geojsonLayer = L.geoJSON(currentData, {
     style: styleFeature,
@@ -187,11 +198,18 @@ function downloadBlob(filename, content) {
 }
 
 function downloadFull() {
-  if (!currentData) {
-    showBanner("No dataset loaded yet.");
-    return;
-  }
-  downloadBlob(`${currentLayerKey}.geojson`, JSON.stringify(currentData));
+  (async () => {
+    let data = currentData;
+    if (!data) {
+      const fetched = await fetchDataset(currentLayerKey);
+      data = fetched.data;
+      if (!data) {
+        showBanner(`Download failed. ${fetched.lastErr || "Unknown error"}`);
+        return;
+      }
+    }
+    downloadBlob(`${currentLayerKey}.geojson`, JSON.stringify(data));
+  })();
 }
 
 function downloadSelected() {
