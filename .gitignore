@@ -5,8 +5,7 @@ venv/
 __pycache__/
 *.py[cod]
 
-# Ignore data (keep it private)
-data/
+# Keep data in repo (needed for GitHub Pages)
 
 # Ignore Streamlit secrets or credentials if used
 .secrets/
