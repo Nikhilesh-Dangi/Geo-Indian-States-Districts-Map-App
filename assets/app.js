@@ -117,13 +117,30 @@ async function loadLayer(key) {
     geojsonLayer.remove();
   }
   const cfg = layerConfig[key];
+  const candidateUrls = [
+    new URL(cfg.path, window.location.href).toString(),
+    `./${cfg.path}`,
+    key === "states" ? "data/in.json" : "data/output.geojson",
+  ];
   let res;
   try {
-    res = await fetch(cfg.path);
-    if (!res.ok) throw new Error(`Fetch failed ${res.status}`);
-    currentData = await res.json();
+    let lastErr;
+    for (const url of candidateUrls) {
+      try {
+        res = await fetch(url);
+        if (res.ok) {
+          currentData = await res.json();
+          break;
+        } else {
+          lastErr = `Fetch failed ${res.status} for ${url}`;
+        }
+      } catch (e) {
+        lastErr = e.message;
+      }
+    }
+    if (!currentData) throw new Error(lastErr || "Unknown fetch error");
   } catch (err) {
-    showBanner(`Failed to load ${cfg.path}. Check GitHub Pages path or allow data fetch. (${err.message})`);
+    showBanner(`Failed to load dataset. ${err.message}`);
     return;
   }
 
