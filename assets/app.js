@@ -117,19 +117,27 @@ async function loadLayer(key) {
     geojsonLayer.remove();
   }
   const cfg = layerConfig[key];
+  const basePath = window.location.pathname.replace(/[^/]*$/, ""); // includes trailing slash
   const candidateUrls = [
+    new URL(cfg.path, window.location.origin + basePath).toString(),
     new URL(cfg.path, window.location.href).toString(),
+    `${basePath}${cfg.path}`,
     `./${cfg.path}`,
+    key === "states" ? `${basePath}data/in.json` : `${basePath}data/output.geojson`,
     key === "states" ? "data/in.json" : "data/output.geojson",
   ];
   let res;
   try {
     let lastErr;
+    const tried = new Set();
     for (const url of candidateUrls) {
+      if (tried.has(url)) continue;
+      tried.add(url);
       try {
         res = await fetch(url);
         if (res.ok) {
           currentData = await res.json();
+          console.info(`Loaded dataset from ${url}`);
           break;
         } else {
           lastErr = `Fetch failed ${res.status} for ${url}`;
