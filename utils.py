@@ -123,6 +123,6 @@ def export_gdf_as_geojson_bytes(gdf):
     """Serialize GeoDataFrame to GeoJSON bytes for download."""
     if gdf.empty:
         return b"{}"
-    buf = io.StringIO()
-    gdf.to_json(buf)
-    return buf.getvalue().encode("utf-8")
+    # Some GeoPandas versions treat the first positional arg as "na" instead of buffer,
+    # so call without a buffer to get a string directly.
+    return gdf.to_json().encode("utf-8")

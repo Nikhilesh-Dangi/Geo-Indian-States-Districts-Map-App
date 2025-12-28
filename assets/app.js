@@ -126,9 +126,6 @@ async function loadLayer(key) {
     new URL(cfg.path, window.location.href).toString(),
     `${basePath}${cfg.path}`,
     `./${cfg.path}`,
-    key === "states" ? `${repoBase}data/in.json` : `${repoBase}data/output.geojson`,
-    key === "states" ? `${basePath}data/in.json` : `${basePath}data/output.geojson`,
-    key === "states" ? "./data/in.json" : "./data/output.geojson",
   ];
   let res;
   try {
@@ -152,7 +149,7 @@ async function loadLayer(key) {
     }
     if (!currentData) throw new Error(lastErr || "Unknown fetch error");
   } catch (err) {
-    showBanner(`Failed to load dataset. ${err.message}`);
+    showBanner(`Failed to load dataset. ${err.message}. Tried: ${Array.from(new Set(candidateUrls)).join(", ")}`);
     return;
   }
 
