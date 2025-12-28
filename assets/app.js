@@ -117,9 +117,8 @@ async function loadLayer(key) {
     geojsonLayer.remove();
   }
   const cfg = layerConfig[key];
-  const repoBase = window.location.pathname.includes("/Geo-Indian-States-Districts-Map-App/")
-    ? "/Geo-Indian-States-Districts-Map-App/"
-    : "/";
+  const pathParts = window.location.pathname.split("/").filter(Boolean);
+  const repoBase = pathParts.length ? `/${pathParts[0]}/` : "/";
   const basePath = window.location.pathname.replace(/[^/]*$/, ""); // includes trailing slash
   const candidateUrls = [
     `${repoBase}${cfg.path}`,
@@ -129,7 +128,7 @@ async function loadLayer(key) {
     `./${cfg.path}`,
     key === "states" ? `${repoBase}data/in.json` : `${repoBase}data/output.geojson`,
     key === "states" ? `${basePath}data/in.json` : `${basePath}data/output.geojson`,
-    key === "states" ? "data/in.json" : "data/output.geojson",
+    key === "states" ? "./data/in.json" : "./data/output.geojson",
   ];
   let res;
   try {
