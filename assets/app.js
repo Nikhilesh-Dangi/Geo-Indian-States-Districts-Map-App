@@ -117,12 +117,17 @@ async function loadLayer(key) {
     geojsonLayer.remove();
   }
   const cfg = layerConfig[key];
+  const repoBase = window.location.pathname.includes("/Geo-Indian-States-Districts-Map-App/")
+    ? "/Geo-Indian-States-Districts-Map-App/"
+    : "/";
   const basePath = window.location.pathname.replace(/[^/]*$/, ""); // includes trailing slash
   const candidateUrls = [
+    `${repoBase}${cfg.path}`,
     new URL(cfg.path, window.location.origin + basePath).toString(),
     new URL(cfg.path, window.location.href).toString(),
     `${basePath}${cfg.path}`,
     `./${cfg.path}`,
+    key === "states" ? `${repoBase}data/in.json` : `${repoBase}data/output.geojson`,
     key === "states" ? `${basePath}data/in.json` : `${basePath}data/output.geojson`,
     key === "states" ? "data/in.json" : "data/output.geojson",
   ];
