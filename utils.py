@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 from shapely.geometry import LineString, Point
 from shapely.errors import TopologicalError
 import warnings
+import io
 
 def plot_full_india_map(states_gdf):
     """Plot the full India map with state labels."""
@@ -77,6 +78,7 @@ def draw_map_lines_with_labels(
     ax.axis('off')
     return fig
 
+
 def add_hover_tooltips(map_obj, gdf, field_to_color, tooltip_fields, tooltip_aliases):
     min_val = gdf[field_to_color].min()
     max_val = gdf[field_to_color].max()
@@ -100,3 +102,27 @@ def add_hover_tooltips(map_obj, gdf, field_to_color, tooltip_fields, tooltip_ali
     ).add_to(map_obj)
 
     colormap.add_to(map_obj)
+
+
+def buffer_geometries(gdf, distance_km):
+    """Buffer geometries by distance (km) using a metric CRS, return GeoDataFrame in WGS84."""
+    if gdf.empty:
+        return gdf
+
+    # Use Web Mercator for simplicity; acceptable for small buffers at this scale
+    try:
+        metric = gdf.to_crs(epsg=3857)
+        buffered = metric.copy()
+        buffered["geometry"] = metric.geometry.buffer(distance_km * 1000)
+        return buffered.to_crs(epsg=4326)
+    except Exception:
+        return gdf  # fallback to original if reprojection fails
+
+
+def export_gdf_as_geojson_bytes(gdf):
+    """Serialize GeoDataFrame to GeoJSON bytes for download."""
+    if gdf.empty:
+        return b"{}"
+    buf = io.StringIO()
+    gdf.to_json(buf)
+    return buf.getvalue().encode("utf-8")
