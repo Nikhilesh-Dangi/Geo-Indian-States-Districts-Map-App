@@ -1,13 +1,32 @@
-const map = L.map("map", {
-  center: [22.5, 79],
-  zoom: 5,
-  minZoom: 3,
-  worldCopyJump: true,
-});
+function showBanner(msg) {
+  let banner = document.getElementById("banner");
+  if (!banner) {
+    banner = document.createElement("div");
+    banner.id = "banner";
+    banner.className = "banner";
+    document.body.appendChild(banner);
+  }
+  banner.textContent = msg;
+}
 
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
-}).addTo(map);
+if (!window.L) {
+  showBanner("Map library failed to load. If you blocked CDN scripts, allow Leaflet or host it locally.");
+}
+
+const map = window.L
+  ? L.map("map", {
+      center: [22.5, 79],
+      zoom: 5,
+      minZoom: 3,
+      worldCopyJump: true,
+    })
+  : null;
+
+if (map) {
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
+  }).addTo(map);
+}
 
 const layerSelect = document.getElementById("layer-select");
 const searchInput = document.getElementById("search");
@@ -93,12 +112,20 @@ function onEachFeature(feature, layer) {
 async function loadLayer(key) {
   currentLayerKey = key;
   persistSelections();
+  if (!map) return;
   if (geojsonLayer) {
     geojsonLayer.remove();
   }
   const cfg = layerConfig[key];
-  const res = await fetch(cfg.path);
-  currentData = await res.json();
+  let res;
+  try {
+    res = await fetch(cfg.path);
+    if (!res.ok) throw new Error(`Fetch failed ${res.status}`);
+    currentData = await res.json();
+  } catch (err) {
+    showBanner(`Failed to load ${cfg.path}. Check GitHub Pages path or allow data fetch. (${err.message})`);
+    return;
+  }
 
   geojsonLayer = L.geoJSON(currentData, {
     style: styleFeature,
@@ -134,16 +161,30 @@ function downloadBlob(filename, content) {
 }
 
 function downloadFull() {
-  if (!currentData) return;
+  if (!currentData) {
+    showBanner("No dataset loaded yet.");
+    return;
+  }
   downloadBlob(`${currentLayerKey}.geojson`, JSON.stringify(currentData));
 }
 
 function downloadSelected() {
-  if (!currentData) return;
+  if (!currentData) {
+    showBanner("No dataset loaded yet.");
+    return;
+  }
   const selectedFeatures = currentData.features.filter((feature) => {
-    const id = feature.id || feature.properties.id || feature.properties.fid || feature.properties[layerConfig[currentLayerKey].nameProp];
+    const id =
+      feature.id ||
+      feature.properties.id ||
+      feature.properties.fid ||
+      feature.properties[layerConfig[currentLayerKey].nameProp];
     return selectedIds.has(`${currentLayerKey}:${id}`);
   });
+  if (!selectedFeatures.length) {
+    showBanner("No selections yet. Click features to select.");
+    return;
+  }
   const fc = { type: "FeatureCollection", features: selectedFeatures };
   downloadBlob(`${currentLayerKey}-selected.geojson`, JSON.stringify(fc));
 }

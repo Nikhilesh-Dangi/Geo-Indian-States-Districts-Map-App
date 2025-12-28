@@ -9,6 +9,10 @@
 
 * { box-sizing: border-box; }
 
+html, body {
+  height: 100%;
+}
+
 body {
   margin: 0;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
@@ -81,7 +85,12 @@ button.primary {
 
 #map {
   flex: 1;
-  min-height: calc(100vh - 70px);
+  height: calc(100vh - 64px);
+  width: 100%;
+}
+
+.leaflet-container {
+  background: #0b1224;
 }
 
 .modal {
@@ -134,4 +143,17 @@ code {
   background: #0c162d;
   border: 1px solid var(--panel-border);
   border-radius: 6px;
+}
+
+.banner {
+  position: absolute;
+  top: 70px;
+  left: 16px;
+  background: #111a32;
+  border: 1px solid var(--panel-border);
+  color: var(--text);
+  padding: 12px 14px;
+  border-radius: 10px;
+  max-width: 360px;
+  z-index: 1200;
 }
