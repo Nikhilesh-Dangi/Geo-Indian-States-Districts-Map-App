@@ -1,63 +1,32 @@
-![image](https://github.com/user-attachments/assets/8080ce7d-7058-4a71-a294-51e1593d71bd)
-# Hugging Face
-https://huggingface.co/spaces/Nikhilesh423/India-Map-Visualizer
+# India Geo Explorer (GitHub Pages)
 
+Static Leaflet app to browse India states or districts, search, hover, click to select, and download GeoJSON (full or selected). Selections persist via localStorage; optional GitHub token flow saves selections to `/saved/user_selections.json` through the GitHub API.
 
-
-# 🇮🇳 India Map Visualizer
-
-An interactive Streamlit application that lets you:
-
-- Visualize Indian **states** or **districts** on a map
-- Select specific regions to **highlight**
-- Display **connection lines** between selected regions
-- Add **target coordinates** manually by clicking
-- Render **interactive maps with coloring** and **hover tooltips** using `folium`
-
----
-
-## 📸 Features
-
-- ✅ Select between **State-to-State** or **District-to-District** mode
-- ✅ Optional target points input (e.g., from Google Maps)
-- ✅ Draw lines (Straight, Dashed, Curved) between regions
-- ✅ Show/hide full India boundaries
-- ✅ Interactive mode with colored regions based on attributes
-- ✅ Hover tooltips with extra information (e.g., name, population)
-
----
-
-## 📁 Directory Structure
-state-map-app/
-│
-├── app.py 
-├── utils.py 
-├── requirements.txt
-├── README.md 
-└── data/
-├── in.json 
-└── output.geojson 
-
-
-
----
-
-## 🔧 Setup Instructions
-
-1. **Clone the repo**
-
+## Quick start (local or Pages preview)
 ```bash
-git clone https://github.com/nikhil1111111/state-map-app.git
-cd state-map-app
+npm install -g serve
+serve .
+# open http://localhost:3000
+```
 
+## Deploy on GitHub Pages (project site)
+1) Ensure repo contains:
+- `index.html`
+- `assets/style.css`
+- `assets/app.js`
+- `data/states.geojson`
+- `data/districts.geojson`
 
-#Make sure you are in a virtual environment:
-python -m venv venv
-source venv/bin/activate  # on Windows use venv\Scripts\activate
-pip install -r requirements.txt
+2) Commit & push to `main`.
 
-#Run the app
-streamlit run app.py
+3) In GitHub: Settings → Pages  
+   Source: Deploy from a branch  
+   Branch: `main`  
+   Folder: `/ (root)`
 
-#⚠️ Ensure GDAL dependencies are installed if running on Linux. You can install them via:
-sudo apt install gdal-bin libgdal-dev
+4) Visit: `https://nikhilesh-dangi.github.io/Geo-Indian-States-Districts-Map-App/`
+
+## Optional “save selection to GitHub”
+Only needed if you want selections committed back to this repo (not secure for public sites).
+- Open the settings modal, paste a GitHub token (contents:write), owner, and repo name.
+- The app PUTs to `saved/user_selections.json` via GitHub REST. Without a token, selections stay in localStorage only.

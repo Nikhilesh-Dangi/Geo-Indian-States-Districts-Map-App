@@ -1,0 +1,137 @@
+:root {
+  --bg: #0b1224;
+  --panel: #111a32;
+  --panel-border: rgba(255, 255, 255, 0.08);
+  --text: #e9eef7;
+  --muted: #9bb2d5;
+  --accent: #7ee0ff;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: radial-gradient(circle at 20% 20%, rgba(126, 224, 255, 0.1), transparent 25%),
+              radial-gradient(circle at 70% 10%, rgba(255, 179, 71, 0.08), transparent 22%),
+              var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.topbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  background: rgba(11, 18, 36, 0.9);
+  border-bottom: 1px solid var(--panel-border);
+  backdrop-filter: blur(8px);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+.brand {
+  font-weight: 700;
+  letter-spacing: 0.4px;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+select, input[type="search"], button {
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid var(--panel-border);
+  background: var(--panel);
+  color: var(--text);
+  padding: 0 10px;
+  outline: none;
+}
+
+button {
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+button:hover {
+  border-color: var(--accent);
+  color: white;
+}
+
+button.primary {
+  background: linear-gradient(135deg, #7ee0ff, #59b7ff);
+  color: #0b1224;
+  border: none;
+  font-weight: 700;
+}
+
+#map {
+  flex: 1;
+  min-height: calc(100vh - 70px);
+}
+
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.hidden { display: none; }
+
+.modal-content {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  padding: 16px;
+  width: min(520px, 100%);
+  color: var(--text);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 10px 0;
+}
+
+.field input {
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid var(--panel-border);
+  background: #0c162d;
+  color: var(--text);
+}
+
+.muted { color: var(--muted); font-size: 14px; }
+
+code {
+  padding: 2px 4px;
+  background: #0c162d;
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+}
