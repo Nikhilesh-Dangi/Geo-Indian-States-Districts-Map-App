@@ -42,6 +42,7 @@ const settingsBtn = document.getElementById("settings-btn");
 const modal = document.getElementById("settings-modal");
 const closeModalBtn = document.getElementById("close-modal");
 const saveToGithubBtn = document.getElementById("save-to-github");
+const searchResults = document.getElementById("search-results");
 
 const GH_TOKEN_INPUT = document.getElementById("gh-token");
 const GH_OWNER_INPUT = document.getElementById("gh-owner");
@@ -122,7 +123,7 @@ async function fetchDataset(key) {
 }
 
 function styleFeature(feature) {
-  const id = feature.id || feature.properties.id || feature.properties.fid;
+  const id = getFeatureId(feature);
   const isSelected = selectedIds.has(`${currentLayerKey}:${id}`);
   return {
     color: isSelected ? "#ffb347" : "#6fb9ff",
@@ -132,10 +133,18 @@ function styleFeature(feature) {
   };
 }
 
-function onEachFeature(feature, layer) {
+function getFeatureId(feature) {
+  return feature.id || feature.properties.id || feature.properties.fid || feature.properties[layerConfig[currentLayerKey].nameProp];
+}
+
+function getFeatureName(feature) {
   const nameProp = layerConfig[currentLayerKey].nameProp;
-  const name = feature.properties[nameProp] || feature.properties.name || "Unknown";
-  const id = feature.id || feature.properties.id || feature.properties.fid || name;
+  return feature.properties[nameProp] || feature.properties.name || "Unknown";
+}
+
+function onEachFeature(feature, layer) {
+  const name = getFeatureName(feature);
+  const id = getFeatureId(feature);
 
   layer.bindTooltip(name, { sticky: true });
 
@@ -203,11 +212,103 @@ function applySearchFilter() {
       map.fitBounds(bounds, { padding: [18, 18], maxZoom: 10 });
       showBanner("");
     } else {
-      showBanner(`No matches for "${term}".`);
+      showBanner(`No matches for "${term}" in ${currentLayerKey}.`);
     }
   } else {
     showBanner("");
   }
+
+  renderSearchResults(term, matchedLayers);
+  maybeSuggestOtherLayer(term, matchedLayers.length);
+}
+
+function renderSearchResults(term, matchedLayers) {
+  if (!searchResults) return;
+  searchResults.innerHTML = "";
+
+  if (!term) {
+    searchResults.textContent = "Type to search";
+    return;
+  }
+
+  if (!currentData) {
+    searchResults.textContent = "Dataset not loaded.";
+    return;
+  }
+
+  const nameProp = layerConfig[currentLayerKey].nameProp;
+  const matches = currentData.features
+    .filter((f) => (f.properties[nameProp] || "").toLowerCase().includes(term))
+    .slice(0, 8);
+
+  if (!matches.length) {
+    searchResults.textContent = "No matches.";
+    return;
+  }
+
+  matches.forEach((feature) => {
+    const pill = document.createElement("button");
+    pill.className = "pill";
+    const name = getFeatureName(feature);
+    pill.textContent = name;
+    pill.title = "Zoom to " + name;
+    pill.addEventListener("click", () => focusFeature(feature));
+    searchResults.appendChild(pill);
+  });
+
+  if (currentData.features.length > 8) {
+    const msg = document.createElement("span");
+    msg.className = "muted";
+    msg.textContent = `Showing ${matches.length} of ${currentData.features.length}`;
+    searchResults.appendChild(msg);
+  }
+}
+
+async function maybeSuggestOtherLayer(term, currentMatchesCount) {
+  if (!term || currentMatchesCount) return;
+  const otherLayer = currentLayerKey === "states" ? "districts" : "states";
+  const { data } = await fetchDataset(otherLayer);
+  if (!data) return;
+  const nameProp = layerConfig[otherLayer].nameProp;
+  const matches = data.features.filter((f) => (f.properties[nameProp] || "").toLowerCase().includes(term));
+  if (!matches.length) return;
+
+  searchResults.innerHTML = "";
+  const msg = document.createElement("span");
+  msg.className = "muted";
+  msg.textContent = `Found ${matches.length} match(es) in ${otherLayer}. Switch to view.`;
+  searchResults.appendChild(msg);
+
+  matches.slice(0, 6).forEach((feature) => {
+    const pill = document.createElement("button");
+    pill.className = "pill";
+    const name = getFeatureName(feature);
+    pill.textContent = `${name} (${otherLayer})`;
+    pill.title = "Switch layer and zoom";
+    pill.addEventListener("click", async () => {
+      layerSelect.value = otherLayer;
+      await loadLayer(otherLayer);
+      searchInput.value = term;
+      applySearchFilter();
+      focusFeature(feature);
+    });
+    searchResults.appendChild(pill);
+  });
+}
+
+function focusFeature(feature) {
+  const id = getFeatureId(feature);
+  let targetLayer = null;
+  geojsonLayer?.eachLayer((layer) => {
+    if (getFeatureId(layer.feature) === id) {
+      targetLayer = layer;
+    }
+  });
+  if (!targetLayer) return;
+  const bounds = targetLayer.getBounds();
+  map?.fitBounds(bounds, { padding: [20, 20], maxZoom: 10 });
+  targetLayer.setStyle({ weight: 3, color: "#ff8c00", fillOpacity: 0.75, opacity: 1 });
+  targetLayer.openTooltip?.();
 }
 
 function downloadBlob(filename, content) {

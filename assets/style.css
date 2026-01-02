@@ -56,6 +56,30 @@ body {
   align-items: center;
 }
 
+.search-results {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.pill {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #0c162d;
+  border: 1px solid var(--panel-border);
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.pill:hover {
+  border-color: var(--accent);
+  background: #122038;
+}
+
 select, input[type="search"], button {
   height: 36px;
   border-radius: 10px;
