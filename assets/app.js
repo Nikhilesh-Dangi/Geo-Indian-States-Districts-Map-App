@@ -6,7 +6,13 @@ function showBanner(msg) {
     banner.className = "banner";
     document.body.appendChild(banner);
   }
+  if (!msg) {
+    banner.textContent = "";
+    banner.classList.add("hidden");
+    return;
+  }
   banner.textContent = msg;
+  banner.classList.remove("hidden");
 }
 
 if (!window.L) {
@@ -176,15 +182,32 @@ async function loadLayer(key) {
 function applySearchFilter() {
   if (!geojsonLayer) return;
   const term = searchInput.value.trim().toLowerCase();
+  const matchedLayers = [];
   geojsonLayer.eachLayer((layer) => {
+    geojsonLayer.resetStyle(layer);
     const name = layer.feature.properties[layerConfig[currentLayerKey].nameProp] || "";
-    const matches = name.toLowerCase().includes(term);
-    if (term && !matches) {
+    const isMatch = name.toLowerCase().includes(term);
+    if (term && !isMatch) {
       layer.setStyle({ fillOpacity: 0.05, opacity: 0.2 });
-    } else {
-      geojsonLayer.resetStyle(layer);
+    } else if (isMatch) {
+      layer.setStyle({ weight: 3, color: "#ff8c00", fillOpacity: 0.75, opacity: 1 });
+      if (layer.bringToFront) layer.bringToFront();
+      if (layer.openTooltip) layer.openTooltip();
+      matchedLayers.push(layer);
     }
   });
+
+  if (term) {
+    if (matchedLayers.length && map) {
+      const bounds = L.featureGroup(matchedLayers).getBounds();
+      map.fitBounds(bounds, { padding: [18, 18], maxZoom: 10 });
+      showBanner("");
+    } else {
+      showBanner(`No matches for "${term}".`);
+    }
+  } else {
+    showBanner("");
+  }
 }
 
 function downloadBlob(filename, content) {
