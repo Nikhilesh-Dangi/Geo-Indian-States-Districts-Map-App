@@ -54,6 +54,8 @@ let currentData = null;
 let currentLayerKey = "states";
 let selectedIds = new Set(JSON.parse(localStorage.getItem("selected-ids") || "[]"));
 let lastLoadedUrl = null;
+let isAutoSwitching = false;
+let lastAutoSwitchTerm = null;
 
 const layerConfig = {
   states: {
@@ -188,7 +190,7 @@ async function loadLayer(key) {
   updateHashFromSelections();
 }
 
-function applySearchFilter() {
+function applySearchFilter(fromAutoSwitch = false) {
   if (!geojsonLayer) return;
   const term = searchInput.value.trim().toLowerCase();
   const matchedLayers = [];
@@ -213,6 +215,9 @@ function applySearchFilter() {
       showBanner("");
     } else {
       showBanner(`No matches for "${term}" in ${currentLayerKey}.`);
+      if (!fromAutoSwitch && lastAutoSwitchTerm !== term) {
+        autoSwitchToOtherLayer(term);
+      }
     }
   } else {
     showBanner("");
@@ -285,15 +290,30 @@ async function maybeSuggestOtherLayer(term, currentMatchesCount) {
     const name = getFeatureName(feature);
     pill.textContent = `${name} (${otherLayer})`;
     pill.title = "Switch layer and zoom";
-    pill.addEventListener("click", async () => {
-      layerSelect.value = otherLayer;
-      await loadLayer(otherLayer);
-      searchInput.value = term;
-      applySearchFilter();
-      focusFeature(feature);
-    });
+    pill.addEventListener("click", () => autoSwitchToOtherLayer(term, feature));
     searchResults.appendChild(pill);
   });
+}
+
+async function autoSwitchToOtherLayer(term, featureToFocus) {
+  if (isAutoSwitching) return;
+  const otherLayer = currentLayerKey === "states" ? "districts" : "states";
+  const { data } = await fetchDataset(otherLayer);
+  if (!data) return;
+  const nameProp = layerConfig[otherLayer].nameProp;
+  const matches = data.features.filter((f) => (f.properties[nameProp] || "").toLowerCase().includes(term.toLowerCase()));
+  if (!matches.length) return;
+
+  isAutoSwitching = true;
+  lastAutoSwitchTerm = term;
+  layerSelect.value = otherLayer;
+  await loadLayer(otherLayer);
+  searchInput.value = term;
+  applySearchFilter(true);
+
+  const feature = featureToFocus || matches[0];
+  focusFeature(feature);
+  isAutoSwitching = false;
 }
 
 function focusFeature(feature) {
