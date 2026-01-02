@@ -144,6 +144,14 @@ function getFeatureName(feature) {
   return feature.properties[nameProp] || feature.properties.name || "Unknown";
 }
 
+function slugify(str) {
+  return (str || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80) || "selection";
+}
+
 function onEachFeature(feature, layer) {
   const name = getFeatureName(feature);
   const id = getFeatureId(feature);
@@ -352,7 +360,8 @@ function downloadFull() {
         return;
       }
     }
-    downloadBlob(`${currentLayerKey}.geojson`, JSON.stringify(data));
+    const filename = `${currentLayerKey}-full.geojson`;
+    downloadBlob(filename, JSON.stringify(data));
   })();
 }
 
@@ -373,8 +382,19 @@ function downloadSelected() {
     showBanner("No selections yet. Click features to select.");
     return;
   }
+  const filename = buildSelectionFilename(selectedFeatures);
   const fc = { type: "FeatureCollection", features: selectedFeatures };
-  downloadBlob(`${currentLayerKey}-selected.geojson`, JSON.stringify(fc));
+  downloadBlob(filename, JSON.stringify(fc));
+}
+
+function buildSelectionFilename(selectedFeatures) {
+  const names = selectedFeatures
+    .map((f) => getFeatureName(f))
+    .filter(Boolean)
+    .slice(0, 3)
+    .map(slugify);
+  const suffix = selectedFeatures.length > 3 ? `${selectedFeatures.length}-items` : names.join("-");
+  return `${currentLayerKey}-${suffix || "selection"}.geojson`;
 }
 
 // Optional GitHub save
